@@ -115,7 +115,7 @@ class ESGD(optim.Optimizer):
         hvps_iter = None
         if self.steps < self.d_warmup or self.steps_since_d >= self.update_d_every:
             total = torch.tensor(0.)
-            params = []
+            params, grads, vs = [], [], []
             with torch.enable_grad():
                 for group in self.param_groups:
                     for p in group['params']:
@@ -129,8 +129,11 @@ class ESGD(optim.Optimizer):
                                 'create_graph is set to True.'
                             raise RuntimeError(msg)
                         params.append(p)
-                        total = total + torch.sum(p.grad * torch.randn_like(p.grad))
-                hvps = torch.autograd.grad(total, params)
+                        grads.append(p.grad)
+                        # Draw v from Rademacher distribution instead of normal as in ESGD paper
+                        # to reduce variance.
+                        vs.append(torch.randint_like(p.grad, 2) * 2 - 1)
+                hvps = torch.autograd.grad(grads, params, grad_outputs=vs)
             hvps_iter = iter(hvps)
             self.steps_since_d = 0
 
