@@ -99,6 +99,14 @@ class ESGD(optim.Optimizer):
         self.steps = state_dict['global_state']['steps']
         self.steps_since_d = state_dict['global_state']['steps_since_d']
 
+    def should_create_graph(self):
+        """Returns True if the optimizer will update the squared Hessian diagonal estimate
+        on the next call to .step() and thus you need to enable create_graph:
+
+        >>> loss.backward(create_graph=optimizer.should_create_graph())
+        """
+        return self.steps < self.d_warmup or self.steps_since_d >= self.update_d_every
+
     @torch.no_grad()
     def step(self, closure=None):
         """Performs a single optimization step.
@@ -113,7 +121,7 @@ class ESGD(optim.Optimizer):
 
         # Compute the squared Hessian diagonal estimate
         hvps_iter = None
-        if self.steps < self.d_warmup or self.steps_since_d >= self.update_d_every:
+        if self.should_create_graph():
             total = torch.tensor(0.)
             params, grads, vs = [], [], []
             with torch.enable_grad():

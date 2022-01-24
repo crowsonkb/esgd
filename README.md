@@ -4,7 +4,7 @@ ESGD-M is a stochastic non-convex second order optimizer, suitable for training 
 
 ESGD-M obtains Hessian information through occasional Hessian-vector products (by default, every ten optimizer steps; each Hessian-vector product is approximately the same cost as a gradient evaluation) and uses it to adapt per-parameter learning rates. It estimates the diagonal of the absolute Hessian, diag(|H|), to use as a diagonal preconditioner.
 
-To use this optimizer you must call `.backward()` with the `create_graph=True` option. Gradient accumulation steps and distributed training are currently not supported.
+To use this optimizer you must call `.backward()` with the `create_graph=True` option on those steps when it is going to perform a Hessian-vector product. You can call it like: `loss.backward(create_graph=opt.should_create_graph())` to do this. Gradient accumulation steps and distributed training are currently not supported.
 
 ## Learning rates
 
@@ -46,12 +46,12 @@ The ESGD-M decay coefficient `beta_2` refers not to the squared gradient as in A
 
 ## Hessian-vector products
 
-The absolute Hessian diagonal diag(|H|) is estimated every `update_d_every` steps. The default is 10. Also, for the first `d_warmup` steps the diagonal will be estimated regardless, to obtain a lower variance estimate of diag(|H|) quickly. The estimation uses a Hessian-vector product, which takes around the same amount of time as a gradient evaluation to compute. You must explicitly signal to PyTorch that you want to do a double backward pass by:
+The absolute Hessian diagonal diag(|H|) is estimated every `update_d_every` steps. The default is 10. Also, for the first `d_warmup` steps the diagonal will be estimated regardless, to obtain a lower variance estimate of diag(|H|) quickly. The estimation uses a Hessian-vector product, which takes around the same amount of time as a gradient evaluation to compute. You must explicitly signal to PyTorch that you want to do a double backward pass  on the steps when the optimizer is scheduled to do it by:
 
 ```python
 opt.zero_grad(set_to_none=True)
 loss = loss_fn(model(inputs), targets)
-loss.backward(create_graph=True)
+loss.backward(create_graph=opt.should_create_graph())
 opt.step()
 ```
 
