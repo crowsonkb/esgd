@@ -28,19 +28,19 @@ Second order optimizers (including ESGD-M):
 
 ## Momentum
 
-The default configuration is Nesterov momentum (if `v` is not specified then it will default to the value of `beta_1`, producing Nesterov momentum):
+The default configuration is Nesterov momentum (if `nu` is not specified then it will default to the value of `beta_1`, producing Nesterov momentum):
 
 ```python
-opt = ESGD(model.parameters(), lr=1, betas=(0.9, 0.999), v=0.9)
+opt = ESGD(model.parameters(), lr=1, betas=(0.9, 0.999), nu=0.9)
 ```
 
 The Quasi-Hyperbolic Momentum recommended defaults can be obtained using:
 
 ```python
-opt = ESGD(model.parameters(), lr=1, betas=(0.999, 0.999), v=0.7)
+opt = ESGD(model.parameters(), lr=1, betas=(0.999, 0.999), nu=0.7)
 ```
 
-Setting `v` equal to 1 will do normal (non-Nesterov) momentum.
+Setting `nu` equal to 1 will do normal (non-Nesterov) momentum.
 
 The ESGD-M decay coefficient `beta_2` refers not to the squared gradient as in Adam but to the squared Hessian diagonal estimate, which it uses in place of the squared gradient to provide per-parameter adaptive learning rates.
 

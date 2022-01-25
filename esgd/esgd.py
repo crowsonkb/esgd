@@ -24,7 +24,7 @@ class ESGD(optim.Optimizer):
         betas (Tuple[float, float], optional): coefficients used for computing
             running averages of the gradient and squared Hessian diagonal estimate
             (default: (0.9, 0.999))
-        v (float, optional): the quasi-hyperbolic momentum 'v' coefficient.
+        nu (float, optional): the quasi-hyperbolic momentum 'nu' coefficient.
             If not specified, defaults to beta_1 (Nesterov momentum).
         lr_warmup (float, optional): exponential learning rate warmup coefficient
             (same units as betas, 0 means no warmup, closer to 1 means a longer
@@ -44,7 +44,7 @@ class ESGD(optim.Optimizer):
         https://arxiv.org/abs/1810.06801
     """
 
-    def __init__(self, params, lr=1, betas=(0.9, 0.999), v=None, lr_warmup=0.99, eps=1e-4,
+    def __init__(self, params, lr=1, betas=(0.9, 0.999), nu=None, lr_warmup=0.99, eps=1e-4,
                  weight_decay=0., update_d_every=10, d_warmup=20):
         if not 0. <= lr:
             raise ValueError(f'Invalid learning rate: {lr:g}')
@@ -52,8 +52,8 @@ class ESGD(optim.Optimizer):
             raise ValueError(f'Invalid beta parameter at index 0: {betas[0]:g}')
         if not 0. <= betas[1] < 1.:
             raise ValueError(f'Invalid beta parameter at index 1: {betas[1]:g}')
-        if v is not None and not 0. <= v <= 1.:
-            raise ValueError(f'Invalid v parameter: {v:g}')
+        if nu is not None and not 0. <= nu <= 1.:
+            raise ValueError(f'Invalid nu parameter: {nu:g}')
         if not 0. <= lr_warmup < 1.:
             raise ValueError(f'Invalid lr warmup parameter: {lr_warmup:g}')
         if not 0. <= eps:
@@ -64,8 +64,8 @@ class ESGD(optim.Optimizer):
             raise ValueError(f'Invalid update_d_every parameter: {update_d_every}')
         if not int(d_warmup) or not 1 <= d_warmup:
             raise ValueError(f'Invalid d_warmup parameter: {d_warmup}')
-        v = betas[0] if v is None else v
-        defaults = dict(lr=lr, betas=betas, v=v, lr_warmup=lr_warmup, eps=eps,
+        nu = betas[0] if nu is None else nu
+        defaults = dict(lr=lr, betas=betas, nu=nu, lr_warmup=lr_warmup, eps=eps,
                         weight_decay=weight_decay)
         super().__init__(params, defaults)
         self.update_d_every = update_d_every
@@ -168,7 +168,7 @@ class ESGD(optim.Optimizer):
 
                 exp_avg, exp_avg_d = state['exp_avg'], state['exp_avg_d']
                 beta1, beta2 = group['betas']
-                v = group['v']
+                nu = group['nu']
 
                 # Update the running averages
                 exp_avg.mul_(beta1).add_(grad, alpha=1 - beta1)
@@ -184,8 +184,8 @@ class ESGD(optim.Optimizer):
                 step_size = group['lr'] * (1 - state['lr_warmup_cumprod'])
 
                 # Quasi-hyperbolic momentum
-                exp_avg_est = torch.lerp(exp_avg, grad, 1 - v)
-                qhm_bias_corr = 1 - state['exp_avg_bias_corr'] * v
+                exp_avg_est = torch.lerp(exp_avg, grad, 1 - nu)
+                qhm_bias_corr = 1 - state['exp_avg_bias_corr'] * nu
 
                 # Weight decay
                 p.mul_(1 - group['weight_decay'] * step_size)
