@@ -1,6 +1,6 @@
 # ESGD-M
 
-ESGD-M is a stochastic non-convex second order optimizer, suitable for training deep learning models. It is based on ESGD ([Equilibrated adaptive learning rates for non-convex optimization](https://proceedings.neurips.cc/paper/2015/file/430c3626b879b4005d41b8a46172e0c0-Paper.pdf)) and incorporates quasi-hyperbolic momentum ([Quasi-hyperbolic momentum and Adam for deep learning](https://arxiv.org/abs/1810.06801)) to accelerate convergence, which considerably improves its performance over plain ESGD.
+ESGD-M is a stochastic non-convex second order optimizer, suitable for training deep learning models. It is based on ESGD ([Equilibrated adaptive learning rates for non-convex optimization](https://arxiv.org/abs/1502.04390)) and incorporates quasi-hyperbolic momentum ([Quasi-hyperbolic momentum and Adam for deep learning](https://arxiv.org/abs/1810.06801)) to accelerate convergence, which considerably improves its performance over plain ESGD.
 
 ESGD-M obtains Hessian information through occasional Hessian-vector products (by default, every ten optimizer steps; each Hessian-vector product is approximately the same cost as a gradient evaluation) and uses it to adapt per-parameter learning rates. It estimates the diagonal of the absolute Hessian, diag(|H|), to use as a diagonal preconditioner.
 
