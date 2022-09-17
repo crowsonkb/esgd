@@ -32,7 +32,7 @@ Second order optimizers (including ESGD-M):
 
 ## Hessian-vector products
 
-The absolute Hessian diagonal diag(|H|) is estimated every `update_d_every` steps. The default is 10. Also, for the first `d_warmup` steps the diagonal will be estimated regardless, to obtain a lower variance estimate of diag(|H|) quickly. The estimation uses a Hessian-vector product, which takes around the same amount of time as a gradient evaluation to compute. You must explicitly signal to PyTorch that you want to do a double backward pass on the steps when the optimizer is scheduled to do it by:
+The equilibriation preconditioner sqrt(diag(H^2)) is estimated every `update_d_every` steps. The default is 10. Also, for the first `d_warmup` steps the diagonal will be estimated regardless, to obtain a lower variance estimate of sqrt(diag(H^2)) quickly. The estimation uses a Hessian-vector product, which takes around the same amount of time as a gradient evaluation to compute. You must explicitly signal to PyTorch that you want to do a double backward pass on the steps when the optimizer is scheduled to do it by:
 
 ```python
 opt.zero_grad(set_to_none=True)
@@ -47,7 +47,7 @@ Weight decay is performed separately from the Hessian-vector product and the pre
 
 ## Learning rate warmup
 
-Because the diag(|H|) estimates are high variance, the adaptive learning rates are not very reliable before many steps have been taken and many estimates have been averaged together. To deal with this ESGD-M has a short exponential learning rate warmup by default (it is combined with any external learning rate schedulers). On each step (starting from 1) the learning rate will be:
+Because the sqrt(diag(H^2)) estimates are high variance, the adaptive learning rates are not very reliable before many steps have been taken and many estimates have been averaged together. To deal with this ESGD-M has a short exponential learning rate warmup by default (it is combined with any external learning rate schedulers). On each step (starting from 1) the learning rate will be:
 
 `lr * (1 - lr_warmup**step)`
 
