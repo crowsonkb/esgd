@@ -1,10 +1,14 @@
 # ESGD-M
 
-ESGD-M is a stochastic non-convex second order optimizer, suitable for training deep learning models. It is based on ESGD ([Equilibrated adaptive learning rates for non-convex optimization](https://arxiv.org/abs/1502.04390)) and incorporates quasi-hyperbolic momentum ([Quasi-hyperbolic momentum and Adam for deep learning](https://arxiv.org/abs/1810.06801)) to accelerate convergence, which considerably improves its performance over plain ESGD.
+ESGD-M is a stochastic non-convex second order optimizer, suitable for training deep learning models. It is based on ESGD ([Equilibrated adaptive learning rates for non-convex optimization](https://arxiv.org/abs/1502.04390)) and incorporates Nesterov momentum to accelerate convergence, which considerably improves its performance over plain ESGD. The absolute Hessian diagonal estimate is also decayed with an [Adamax](https://arxiv.org/abs/1412.6980) style exponentially weighted inf norm, instead of a simple average as in the original ESGD.
 
-ESGD-M obtains Hessian information through occasional Hessian-vector products (by default, every ten optimizer steps; each Hessian-vector product is approximately the same cost as a gradient evaluation) and uses it to adapt per-parameter learning rates. It estimates the diagonal of the absolute Hessian, diag(|H|), to use as a diagonal preconditioner.
+ESGD-M obtains Hessian information through occasional Hessian-vector products (by default, every ten optimizer steps; each Hessian-vector product is approximately the same cost as a gradient evaluation) and uses it to adapt per-parameter learning rates.
 
 To use this optimizer you must call `.backward()` with the `create_graph=True` option on those steps when it is going to perform a Hessian-vector product. You can call it like: `loss.backward(create_graph=opt.should_create_graph())` to do this. Gradient accumulation steps and distributed training are currently not supported.
+
+## Difference between versions
+
+This is an updated version of ESGD-M that is more stable (diverges and produces NaN less). It uses the exponentially weighted inf norm (Adamax) for the absolute Hessian diagonal estimate instead of an EMA, in order to make the optimizer go slower along a coordinate when it is less certain about the correct value of the absolute Hessian diagonal for that coordinate. Also, quasi-hyperbolic momentum was taken out because nobody used it. Nesterov momentum is the only option now. The learning rate warmup is also slower now because only steps where there was a Hessian-vector product performed count for it.
 
 ## Learning rates
 
@@ -26,27 +30,9 @@ Second order optimizers (including ESGD-M):
 
 * You do not have to scale your learning rate if you rescale either your parameters or your loss.
 
-## Momentum
-
-The default configuration is Nesterov momentum (if `nu` is not specified then it will default to the value of `beta_1`, producing Nesterov momentum):
-
-```python
-opt = ESGD(model.parameters(), lr=1, betas=(0.9, 0.999), nu=0.9)
-```
-
-The Quasi-Hyperbolic Momentum recommended defaults can be obtained using:
-
-```python
-opt = ESGD(model.parameters(), lr=1, betas=(0.999, 0.999), nu=0.7)
-```
-
-Setting `nu` equal to 1 will do normal (non-Nesterov) momentum.
-
-The ESGD-M decay coefficient `beta_2` refers not to the squared gradient as in Adam but to the squared Hessian diagonal estimate, which it uses in place of the squared gradient to provide per-parameter adaptive learning rates.
-
 ## Hessian-vector products
 
-The absolute Hessian diagonal diag(|H|) is estimated every `update_d_every` steps. The default is 10. Also, for the first `d_warmup` steps the diagonal will be estimated regardless, to obtain a lower variance estimate of diag(|H|) quickly. The estimation uses a Hessian-vector product, which takes around the same amount of time as a gradient evaluation to compute. You must explicitly signal to PyTorch that you want to do a double backward pass  on the steps when the optimizer is scheduled to do it by:
+The absolute Hessian diagonal diag(|H|) is estimated every `update_d_every` steps. The default is 10. Also, for the first `d_warmup` steps the diagonal will be estimated regardless, to obtain a lower variance estimate of diag(|H|) quickly. The estimation uses a Hessian-vector product, which takes around the same amount of time as a gradient evaluation to compute. You must explicitly signal to PyTorch that you want to do a double backward pass on the steps when the optimizer is scheduled to do it by:
 
 ```python
 opt.zero_grad(set_to_none=True)
@@ -65,4 +51,4 @@ Because the diag(|H|) estimates are high variance, the adaptive learning rates a
 
 `lr * (1 - lr_warmup**step)`
 
-The default value for `lr_warmup` is 0.99, which reaches 63% of the specified learning rate in 100 steps and 95% in 300 steps.
+The default value for `lr_warmup` is 0.99, which reaches 63% of the specified learning rate in 100 steps and 95% in 300 steps. Steps where a Hessian-vector product is not done do not count toward the lr warmup.
