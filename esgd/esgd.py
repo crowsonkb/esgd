@@ -35,7 +35,7 @@ class ESGD(optim.Optimizer):
         https://proceedings.neurips.cc/paper/2015/file/430c3626b879b4005d41b8a46172e0c0-Paper.pdf
     """
 
-    def __init__(self, params, lr=1, betas=(0.9, 0.999), lr_warmup=0.99, eps=1e-4,
+    def __init__(self, params, lr=1., betas=(0.9, 0.999), lr_warmup=0.99, eps=1e-4,
                  weight_decay=0., update_d_every=10, d_warmup=20):
         if not 0. <= lr:
             raise ValueError(f'Invalid learning rate: {lr:g}')
@@ -147,7 +147,7 @@ class ESGD(optim.Optimizer):
                     # Exponential moving average of gradient values
                     state['exp_avg_bias_corr'] = 1.
                     state['exp_avg'] = torch.zeros_like(p, memory_format=torch.preserve_format)
-                    # Exponentially weighted infinity norm of absolute Hessian diagonal estimates
+                    # Exponentially weighted infinity norm of squared Hessian diagonal estimates
                     state['exp_avg_d'] = torch.zeros_like(p, memory_format=torch.preserve_format)
                     # Learning rate warmup cumulative product
                     state['lr_warmup_cumprod'] = 1.
@@ -161,8 +161,8 @@ class ESGD(optim.Optimizer):
                 if hvps_iter is not None:
                     hvp = next(hvps_iter)
                     exp_avg_d.mul_(beta2)
-                    torch.maximum(exp_avg_d, hvp.abs_(), out=exp_avg_d)
-                denom = exp_avg_d + group['eps']
+                    torch.maximum(exp_avg_d, hvp.square_(), out=exp_avg_d)
+                denom = exp_avg_d.sqrt().add_(group['eps'])
 
                 # Learning rate schedule
                 if hvps_iter is not None:

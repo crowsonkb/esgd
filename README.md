@@ -12,7 +12,7 @@ This is an updated version of ESGD-M that is more stable (diverges and produces 
 
 ## Learning rates
 
-ESGD-M learning rates have a different meaning from SGD and Adagrad/Adam/etc. You may need to try learning rates in the range 1e-3 to 1.
+ESGD-M learning rates have a different meaning from SGD and Adagrad/Adam/etc. You may need to try learning rates in the range 1e-3 to 1, starting around 0.5.
 
 SGD class optimizers:
 
